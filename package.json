@@ -1,8 +1,8 @@
 {
     "name": "quick-jump",
     "displayName": "Quick Jump",
-    "description": "Enables quick navigation among visiable editors",
-    "version": "0.0.1",
+    "description": "Enables quick navigation among visible editors",
+    "version": "1.0.0",
     "engines": {
         "vscode": "^1.50.0"
     },
@@ -10,14 +10,14 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:quick-jump.helloWorld"
+        "onCommand:quick-jump.jump"
     ],
     "main": "./out/extension.js",
     "contributes": {
         "commands": [
             {
-                "command": "quick-jump.helloWorld",
-                "title": "Hello World"
+                "command": "quick-jump.jump",
+                "title": "Jump"
             }
         ]
     },
