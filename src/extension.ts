@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 
 interface Anchor {
-    anchor: string;
+    name: string;
     editor: vscode.TextEditor;
     range: vscode.Range;
     decorationType: vscode.TextEditorDecorationType
 }
 
-const anchorChars: string = 'hklyuiopnm,qwertzxcvbasdgjf;0123456789/';
+const anchorNameChars: string = 'hklyuiopnm,qwertzxcvbasdgjf;0123456789/';
 const regex: RegExp = new RegExp('\\b\\w|\\w\\b|\\w(?=_)|(?<=_)\\w|(?<=[a-z0-9])[A-Z]', 'g');
 const textDecorationType = vscode.window.createTextEditorDecorationType({
     color: '#777777'
@@ -17,16 +17,14 @@ let editors: vscode.TextEditor[] = [];
 let blockAnchors: Anchor[] = [];
 let wordAnchors: Anchor[] = [];
 
-function getBlockAnchorDecorationType(content: string) {
+function getBlockAnchorDecorationType(name: string) {
     return vscode.window.createTextEditorDecorationType({
         color: 'transparent',
         before: {
-            contentText: content,
+            contentText: name,
             fontWeight: 'bold',
             color: '#ffb400',
-            backgroundColor: '#0000',
-            margin: '0 -1ch 0 0; position: absolute;',
-            height: '100%'
+            margin: '0 -1ch 0 0; position: absolute;'
         }
     });
 }
@@ -52,11 +50,11 @@ function createBlockAnchors() {
                 for (let j = 0; j < text.length; j++) {
                     const range = new vscode.Range(i, j, i, j + 1);
                     if (indexes.includes(j)) {
-                        const anchor = anchorChars[Math.floor(blockAnchors.length / anchorChars.length)];
-                        const decorationType = getBlockAnchorDecorationType(anchor);
+                        const name = anchorNameChars[Math.floor(blockAnchors.length / anchorNameChars.length)];
+                        const decorationType = getBlockAnchorDecorationType(name);
                         editor.setDecorations(decorationType, [range]);
 
-                        blockAnchors.push({ anchor, editor, range, decorationType });
+                        blockAnchors.push({ name, editor, range, decorationType });
                     }
                     else {
                         editor.setDecorations(textDecorationType, [range]);
@@ -67,30 +65,28 @@ function createBlockAnchors() {
     }
 }
 
-function getWordAnchorDecorationType(content: string) {
+function getWordAnchorDecorationType(name: string) {
     return vscode.window.createTextEditorDecorationType({
         color: 'transparent',
         before: {
-            contentText: content,
+            contentText: name,
             fontWeight: 'bold',
             color: '#ff0000',
-            backgroundColor: '#0000',
             margin: '0 -1ch 0 0; position: absolute;',
-            height: '100%'
         }
     });
 }
 
-function createWordAnchors(userSelectedAnchor: string) {
-    for (let blockAnchor of blockAnchors) {
+function createWordAnchors(name: string) {
+    for (const blockAnchor of blockAnchors) {
         blockAnchor.editor.setDecorations(blockAnchor.decorationType, []);
-        if (blockAnchor.anchor === userSelectedAnchor) {
-            const anchor = anchorChars[wordAnchors.length];
+        if (blockAnchor.name === name) {
+            const name = anchorNameChars[wordAnchors.length];
             const editor = blockAnchor.editor;
             const range = blockAnchor.range;
-            const decorationType = getWordAnchorDecorationType(anchor);
+            const decorationType = getWordAnchorDecorationType(name);
             blockAnchor.editor.setDecorations(decorationType, [range]);
-            wordAnchors.push({ anchor, editor, range, decorationType });
+            wordAnchors.push({ name, editor, range, decorationType });
         }
         else {
             blockAnchor.editor.setDecorations(textDecorationType, [blockAnchor.range]);
@@ -134,8 +130,8 @@ function jumpToPosition(editor: vscode.TextEditor, position: vscode.Position) {
     editor.selection = new vscode.Selection(position, position);
 }
 
-function jumpToAnchor(selectedWordAnchor: string) {
-    const wordAnchor = wordAnchors.find(x => x.anchor === selectedWordAnchor);
+function jumpToAnchor(name: string) {
+    const wordAnchor = wordAnchors.find(x => x.name === name);
     if (!wordAnchor) return;
 
     jumpToEditor(wordAnchor.editor);
@@ -143,22 +139,22 @@ function jumpToAnchor(selectedWordAnchor: string) {
 }
 
 async function getAnchorSelection(prompt: string) {
-    let anchor;
-    const cancellationTokenSource = new vscode.CancellationTokenSource();
+    let name;
+    const cancellation = new vscode.CancellationTokenSource();
     await vscode.window.showInputBox(
         {
             prompt: prompt,
             validateInput: (text: string): undefined => {
                 if (text.length > 0) {
-                    anchor = text[0]
-                    cancellationTokenSource.cancel();
+                    name = text[0]
+                    cancellation.cancel();
 
                     return;
                 }
             }
-        }, cancellationTokenSource.token);
+        }, cancellation.token);
 
-    return anchor;
+    return name;
 }
 
 async function getBlockAnchorSelection() {
@@ -186,16 +182,16 @@ export function activate(context: vscode.ExtensionContext) {
             createBlockAnchors();
             if (!blockAnchors.length) return;
 
-            const selectedBlockAnchor = await getBlockAnchorSelection();
-            if (!selectedBlockAnchor) return;
+            const blockAnchorName = await getBlockAnchorSelection();
+            if (!blockAnchorName) return;
 
-            createWordAnchors(selectedBlockAnchor);
+            createWordAnchors(blockAnchorName);
             if (!wordAnchors.length) return;
 
-            const selectedWordAnchor = await getWordAnchorSelection();
-            if (!selectedWordAnchor) return;
+            const wordAnchorName = await getWordAnchorSelection();
+            if (!wordAnchorName) return;
 
-            jumpToAnchor(selectedWordAnchor);
+            jumpToAnchor(wordAnchorName);
         }
         finally {
             reset();
