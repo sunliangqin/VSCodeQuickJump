@@ -56,8 +56,8 @@
                 },
                 "quickJump.jumpBeforeAnchor": {
                     "type": "boolean",
-                    "default": "false",
-                    "description": "Jump right before anchor"
+                    "default": false,
+                    "description": "Jump before anchor"
                 }
             }
         }

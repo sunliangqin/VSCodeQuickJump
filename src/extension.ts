@@ -13,7 +13,7 @@ interface Settings {
     textColor: string;
     blockAnchorColor: string;
     wordAnchorColor: string;
-    jumpBeforeAnchor: string;
+    jumpBeforeAnchor: boolean;
 }
 
 let editors: vscode.TextEditor[] = [];
@@ -157,7 +157,7 @@ function jumpToEditor(editor: vscode.TextEditor) {
 }
 
 function jumpToPosition(editor: vscode.TextEditor, position: vscode.Position) {
-    if (settings.jumpBeforeAnchor.toLowerCase() === 'true') {
+    if (settings.jumpBeforeAnchor) {
         position = new vscode.Position(position.line, position.character - 1)
     }
     editor.selection = new vscode.Selection(position, position);
