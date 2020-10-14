@@ -3,16 +3,19 @@
     "displayName": "Quick Jump",
     "description": "Enables quick navigation among visible editors",
     "version": "1.0.0",
+    "license": "MIT",
     "engines": {
         "vscode": "^1.50.0"
     },
     "categories": [
         "Other"
     ],
+    "publisher": "Liangqin",
     "activationEvents": [
         "onCommand:quick-jump.jump"
     ],
     "main": "./out/extension.js",
+    "icon": "assets/icon.png",
     "contributes": {
         "commands": [
             {
