@@ -10,6 +10,9 @@
     "categories": [
         "Other"
     ],
+    "repository": {
+        "url": "https://github.com/sunliangqin/VSCodeQuickJump"
+    },
     "publisher": "Liangqin",
     "activationEvents": [
         "onCommand:quick-jump.jump"
@@ -22,7 +25,42 @@
                 "command": "quick-jump.jump",
                 "title": "Jump"
             }
-        ]
+        ],
+        "configuration": {
+            "title": "Quick Jump",
+            "properties": {
+                "quickJump.anchors": {
+                    "type": "string",
+                    "default": "hklyuiopnm,qwertzxcvbasdgjf;0123456789/",
+                    "description": "Anchor signs"
+                },
+                "quickJump.regex": {
+                    "type": "string",
+                    "default": "\\b\\w|\\w\\b|\\w(?=_)|(?<=_)\\w|(?<=[a-z0-9])[A-Z]",
+                    "description": "Custom regex to match for anchors"
+                },
+                "quickJump.textColor": {
+                    "type": "string",
+                    "default": "#777777",
+                    "description": "The font color for other text"
+                },
+                "quickJump.blockAnchorColor": {
+                    "type": "string",
+                    "default": "#ffb400",
+                    "description": "The font color for block anchor"
+                },
+                "quickJump.wordAnchorColor": {
+                    "type": "string",
+                    "default": "#ff0000",
+                    "description": "The font color for the word anchor"
+                },
+                "quickJump.jumpBeforeAnchor": {
+                    "type": "boolean",
+                    "default": "false",
+                    "description": "Jump right before anchor"
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
