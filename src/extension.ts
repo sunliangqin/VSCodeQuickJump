@@ -9,7 +9,7 @@ interface Anchor {
 
 const anchorNameChars: string = 'hklyuiopnm,qwertzxcvbasdgjf;0123456789/';
 const regex: RegExp = new RegExp('\\b\\w|\\w\\b|\\w(?=_)|(?<=_)\\w|(?<=[a-z0-9])[A-Z]', 'g');
-const textDecorationType = vscode.window.createTextEditorDecorationType({
+const dimDecorationType = vscode.window.createTextEditorDecorationType({
     color: '#777777'
 });
 
@@ -31,9 +31,7 @@ function getBlockAnchorDecorationType(name: string) {
 
 function createBlockAnchors() {
     for (const editor of vscode.window.visibleTextEditors) {
-        if (!editor.viewColumn) {
-            continue;
-        }
+        if (!editor.viewColumn) continue;
 
         editors.push(editor);
         for (const visualRange of editor.visibleRanges) {
@@ -57,7 +55,7 @@ function createBlockAnchors() {
                         blockAnchors.push({ name, editor, range, decorationType });
                     }
                     else {
-                        editor.setDecorations(textDecorationType, [range]);
+                        editor.setDecorations(dimDecorationType, [range]);
                     }
                 }
             }
@@ -89,9 +87,36 @@ function createWordAnchors(name: string) {
             wordAnchors.push({ name, editor, range, decorationType });
         }
         else {
-            blockAnchor.editor.setDecorations(textDecorationType, [blockAnchor.range]);
+            blockAnchor.editor.setDecorations(dimDecorationType, [blockAnchor.range]);
         }
     }
+}
+
+async function getAnchorSelection(prompt: string) {
+    let name;
+    const cancellation = new vscode.CancellationTokenSource();
+    await vscode.window.showInputBox(
+        {
+            prompt: prompt,
+            validateInput: (text: string): undefined => {
+                if (text.length > 0) {
+                    name = text[0]
+                    cancellation.cancel();
+
+                    return;
+                }
+            }
+        }, cancellation.token);
+
+    return name;
+}
+
+async function getBlockAnchorSelection() {
+    return getAnchorSelection("Select a block anchor");
+}
+
+async function getWordAnchorSelection() {
+    return getAnchorSelection("Select a word anchor");
 }
 
 function jumpToEditor(editor: vscode.TextEditor) {
@@ -138,35 +163,8 @@ function jumpToAnchor(name: string) {
     jumpToPosition(wordAnchor.editor, wordAnchor.range.end);
 }
 
-async function getAnchorSelection(prompt: string) {
-    let name;
-    const cancellation = new vscode.CancellationTokenSource();
-    await vscode.window.showInputBox(
-        {
-            prompt: prompt,
-            validateInput: (text: string): undefined => {
-                if (text.length > 0) {
-                    name = text[0]
-                    cancellation.cancel();
-
-                    return;
-                }
-            }
-        }, cancellation.token);
-
-    return name;
-}
-
-async function getBlockAnchorSelection() {
-    return getAnchorSelection("Select a block anchor");
-}
-
-async function getWordAnchorSelection() {
-    return getAnchorSelection("Select a word anchor");
-}
-
 function reset() {
-    editors.forEach(x => x.setDecorations(textDecorationType, []));
+    editors.forEach(x => x.setDecorations(dimDecorationType, []));
     editors = [];
 
     blockAnchors.forEach(x => x.editor.setDecorations(x.decorationType, []));
