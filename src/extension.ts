@@ -1,11 +1,5 @@
 import * as vscode from 'vscode';
 
-enum Mode {
-    None,
-    Block,
-    Word
-}
-
 interface Anchor {
     anchor: string;
     editor: vscode.TextEditor;
@@ -19,7 +13,6 @@ const textDecorationType = vscode.window.createTextEditorDecorationType({
     color: '#777777'
 });
 
-let mode = Mode.Block;
 let editors: vscode.TextEditor[] = [];
 let blockAnchors: Anchor[] = [];
 let wordAnchors: Anchor[] = [];
@@ -38,42 +31,29 @@ function getBlockAnchorDecorationType(content: string) {
     });
 }
 
-function getWordAnchorDecorationType(content: string) {
-    return vscode.window.createTextEditorDecorationType({
-        color: 'transparent',
-        before: {
-            contentText: content,
-            fontWeight: 'bold',
-            color: '#ff0000',
-            backgroundColor: '#0000',
-            margin: '0 -1ch 0 0; position: absolute;',
-            height: '100%'
-        }
-    });
-}
 function createBlockAnchors() {
-    for (let editor of vscode.window.visibleTextEditors) {
+    for (const editor of vscode.window.visibleTextEditors) {
         if (!editor.viewColumn) {
             continue;
         }
 
         editors.push(editor);
-        for (let visualRange of editor.visibleRanges) {
+        for (const visualRange of editor.visibleRanges) {
             for (let i = visualRange.start.line; i <= visualRange.end.line; i++) {
-                let line = editor.document.lineAt(i);
-                let text = line.text.substr(0, 200);
+                const line = editor.document.lineAt(i);
+                const text = line.text.substr(0, 200);
 
                 let match;
-                let indexes = [];
+                const indexes = [];
                 while (match = regex.exec(text)) {
                     indexes.push(match.index);
                 }
 
                 for (let j = 0; j < text.length; j++) {
-                    let range = new vscode.Range(i, j, i, j + 1);
+                    const range = new vscode.Range(i, j, i, j + 1);
                     if (indexes.includes(j)) {
-                        let anchor = anchorChars[Math.floor(blockAnchors.length / anchorChars.length)];
-                        let decorationType = getBlockAnchorDecorationType(anchor);
+                        const anchor = anchorChars[Math.floor(blockAnchors.length / anchorChars.length)];
+                        const decorationType = getBlockAnchorDecorationType(anchor);
                         editor.setDecorations(decorationType, [range]);
 
                         blockAnchors.push({ anchor, editor, range, decorationType });
@@ -87,14 +67,28 @@ function createBlockAnchors() {
     }
 }
 
+function getWordAnchorDecorationType(content: string) {
+    return vscode.window.createTextEditorDecorationType({
+        color: 'transparent',
+        before: {
+            contentText: content,
+            fontWeight: 'bold',
+            color: '#ff0000',
+            backgroundColor: '#0000',
+            margin: '0 -1ch 0 0; position: absolute;',
+            height: '100%'
+        }
+    });
+}
+
 function createWordAnchors(userSelectedAnchor: string) {
     for (let blockAnchor of blockAnchors) {
         blockAnchor.editor.setDecorations(blockAnchor.decorationType, []);
         if (blockAnchor.anchor === userSelectedAnchor) {
-            let anchor = anchorChars[wordAnchors.length];
-            let editor = blockAnchor.editor;
-            let range = blockAnchor.range;
-            let decorationType = getWordAnchorDecorationType(anchor);
+            const anchor = anchorChars[wordAnchors.length];
+            const editor = blockAnchor.editor;
+            const range = blockAnchor.range;
+            const decorationType = getWordAnchorDecorationType(anchor);
             blockAnchor.editor.setDecorations(decorationType, [range]);
             wordAnchors.push({ anchor, editor, range, decorationType });
         }
@@ -104,21 +98,8 @@ function createWordAnchors(userSelectedAnchor: string) {
     }
 }
 
-function reset() {
-    mode = Mode.None;
-
-    editors.forEach(x => x.setDecorations(textDecorationType, []));
-    editors = [];
-
-    blockAnchors.forEach(x => x.editor.setDecorations(x.decorationType, []));
-    blockAnchors = [];
-
-    wordAnchors.forEach(x => x.editor.setDecorations(x.decorationType, []));
-    wordAnchors = [];
-}
-
 function jumpToEditor(editor: vscode.TextEditor) {
-    let index = editor.viewColumn;
+    const index = editor.viewColumn;
     switch (index) {
         case 1:
             vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup');
@@ -153,43 +134,71 @@ function jumpToPosition(editor: vscode.TextEditor, position: vscode.Position) {
     editor.selection = new vscode.Selection(position, position);
 }
 
-function jump(editor: vscode.TextEditor, range: vscode.Range) {
-    jumpToEditor(editor);
-    jumpToPosition(editor, range.end);
+function jumpToAnchor(selectedWordAnchor: string) {
+    const wordAnchor = wordAnchors.find(x => x.anchor === selectedWordAnchor);
+    if (!wordAnchor) return;
+
+    jumpToEditor(wordAnchor.editor);
+    jumpToPosition(wordAnchor.editor, wordAnchor.range.end);
 }
 
-function waitForSelection() {
-    mode = Mode.Block;
+async function getAnchorSelection(prompt: string) {
+    let anchor;
+    const cancellationTokenSource = new vscode.CancellationTokenSource();
+    await vscode.window.showInputBox(
+        {
+            prompt: prompt,
+            validateInput: (text: string): undefined => {
+                if (text.length > 0) {
+                    anchor = text[0]
+                    cancellationTokenSource.cancel();
 
-    let disposable = vscode.commands.registerTextEditorCommand('type',
-        (_editor: vscode.TextEditor, _edit: vscode.TextEditorEdit, type: { text: string }) => {
-            let userSelectedAnchor = type.text[0];
-            if (!anchorChars.includes(userSelectedAnchor)) {
-                disposable.dispose();
-                reset();
-
-                return;
-            }
-
-            if (mode === Mode.Block) {
-                createWordAnchors(userSelectedAnchor);
-                mode = Mode.Word;
-            } else if (mode === Mode.Word) {
-                let wordAnchor = wordAnchors.find(x => x.anchor === userSelectedAnchor);
-                if (wordAnchor) {
-                    jump(wordAnchor.editor, wordAnchor.range);
+                    return;
                 }
-
-                disposable.dispose();
-                reset();
             }
-        });
+        }, cancellationTokenSource.token);
+
+    return anchor;
+}
+
+async function getBlockAnchorSelection() {
+    return getAnchorSelection("Select a block anchor");
+}
+
+async function getWordAnchorSelection() {
+    return getAnchorSelection("Select a word anchor");
+}
+
+function reset() {
+    editors.forEach(x => x.setDecorations(textDecorationType, []));
+    editors = [];
+
+    blockAnchors.forEach(x => x.editor.setDecorations(x.decorationType, []));
+    blockAnchors = [];
+
+    wordAnchors.forEach(x => x.editor.setDecorations(x.decorationType, []));
+    wordAnchors = [];
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    context.subscriptions.push(vscode.commands.registerCommand('quick-jump.jump', () => {
-        reset();
-        createBlockAnchors();
-        waitForSelection();
+    context.subscriptions.push(vscode.commands.registerCommand('quick-jump.jump', async () => {
+        try {
+            createBlockAnchors();
+            if (!blockAnchors.length) return;
+
+            const selectedBlockAnchor = await getBlockAnchorSelection();
+            if (!selectedBlockAnchor) return;
+
+            createWordAnchors(selectedBlockAnchor);
+            if (!wordAnchors.length) return;
+
+            const selectedWordAnchor = await getWordAnchorSelection();
+            if (!selectedWordAnchor) return;
+
+            jumpToAnchor(selectedWordAnchor);
+        }
+        finally {
+            reset();
+        }
     }));
 }
