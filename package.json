@@ -58,6 +58,11 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Jump before anchor"
+                },
+                "quickJump.columns": {
+                    "type": "number",
+                    "default": 300,
+                    "description": "Number of columns you can jump"
                 }
             }
         }

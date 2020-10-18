@@ -13,6 +13,7 @@ interface Settings {
     textColor: string;
     blockAnchorColor: string;
     wordAnchorColor: string;
+    columns: number;
     jumpBeforeAnchor: boolean;
 }
 
@@ -20,9 +21,10 @@ let editors: vscode.TextEditor[] = [];
 let blockAnchors: Anchor[] = [];
 let wordAnchors: Anchor[] = [];
 
-let settings = (vscode.workspace.getConfiguration('quickJump') as unknown) as Settings;
-const anchors: string = settings.anchors;
-const regex: RegExp = new RegExp(settings.regex, 'g');
+const settings = (vscode.workspace.getConfiguration('quickJump') as unknown) as Settings;
+const anchors = settings.anchors;
+const regex = new RegExp(settings.regex, 'g');
+
 const dimDecorationType = vscode.window.createTextEditorDecorationType({
     color: settings.textColor
 });
@@ -40,15 +42,18 @@ function getBlockAnchorDecorationType(name: string) {
 }
 
 function createBlockAnchors() {
+    const columns = settings.columns;
+
     for (const editor of vscode.window.visibleTextEditors) {
         if (!editor.viewColumn) continue;
 
+        editor.setDecorations(dimDecorationType, editor.visibleRanges);
         editors.push(editor);
+
         for (const visualRange of editor.visibleRanges) {
-            editor.setDecorations(dimDecorationType, [visualRange]);
             for (let i = visualRange.start.line; i <= visualRange.end.line; i++) {
                 const line = editor.document.lineAt(i);
-                const text = line.text.substr(0, 500);
+                const text = line.text.substr(0, columns);
 
                 let match;
                 const indexes = [];
@@ -56,7 +61,7 @@ function createBlockAnchors() {
                     indexes.push(match.index);
                 }
 
-                for (let j = 0; j < text.length; j++) {
+                for (let j = 0; j < columns; j++) {
                     const range = new vscode.Range(i, j, i, j + 1);
                     if (indexes.includes(j)) {
                         const name = anchors[Math.floor(blockAnchors.length / anchors.length)];
@@ -127,28 +132,28 @@ async function getWordAnchorSelection() {
 function jumpToEditor(editor: vscode.TextEditor) {
     const index = editor.viewColumn;
     switch (index) {
-        case 1:
+        case vscode.ViewColumn.One:
             vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup');
             break;
-        case 2:
+        case vscode.ViewColumn.Two:
             vscode.commands.executeCommand('workbench.action.focusSecondEditorGroup');
             break;
-        case 3:
+        case vscode.ViewColumn.Three:
             vscode.commands.executeCommand('workbench.action.focusThirdEditorGroup');
             break;
-        case 4:
+        case vscode.ViewColumn.Four:
             vscode.commands.executeCommand('workbench.action.focusFourthEditorGroup');
             break;
-        case 5:
+        case vscode.ViewColumn.Five:
             vscode.commands.executeCommand('workbench.action.focusFifthEditorGroup');
             break;
-        case 6:
+        case vscode.ViewColumn.Six:
             vscode.commands.executeCommand('workbench.action.focusSixthEditorGroup');
             break;
-        case 7:
+        case vscode.ViewColumn.Seven:
             vscode.commands.executeCommand('workbench.action.focusSeventhEditorGroup');
             break;
-        case 8:
+        case vscode.ViewColumn.Eight:
             vscode.commands.executeCommand('workbench.action.focusEighthEditorGroup');
             break;
         default:
@@ -194,7 +199,7 @@ export function activate(context: vscode.ExtensionContext) {
             createWordAnchors(blockAnchor);
             if (!wordAnchors.length) return;
 
-            const wordAnchor= await getWordAnchorSelection();
+            const wordAnchor = await getWordAnchorSelection();
             if (!wordAnchor) return;
 
             jumpToAnchor(wordAnchor);
