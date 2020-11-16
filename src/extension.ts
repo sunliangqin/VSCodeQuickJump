@@ -188,7 +188,7 @@ function reset() {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    context.subscriptions.push(vscode.commands.registerCommand('quick-jump.jump', async () => {
+    context.subscriptions.push(vscode.commands.registerCommand('quickJump.jump', async () => {
         try {
             createBlockAnchors();
             if (!blockAnchors.length) return;

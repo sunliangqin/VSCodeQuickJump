@@ -15,14 +15,14 @@
     },
     "publisher": "Liangqin",
     "activationEvents": [
-        "onCommand:quick-jump.jump"
+        "onCommand:quickJump.jump"
     ],
     "main": "./out/extension.js",
     "icon": "assets/icon.png",
     "contributes": {
         "commands": [
             {
-                "command": "quick-jump.jump",
+                "command": "quickJump.jump",
                 "title": "Jump"
             }
         ],
