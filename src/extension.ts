@@ -4,7 +4,7 @@ interface Anchor {
     name: string;
     editor: vscode.TextEditor;
     range: vscode.Range;
-    decorationType: vscode.TextEditorDecorationType
+    decorationType: vscode.TextEditorDecorationType;
 }
 
 interface Settings {
@@ -22,8 +22,6 @@ let blockAnchors: Anchor[] = [];
 let wordAnchors: Anchor[] = [];
 
 const settings = (vscode.workspace.getConfiguration('quickJump') as unknown) as Settings;
-const anchors = settings.anchors;
-const regex = new RegExp(settings.regex, 'g');
 
 const dimDecorationType = vscode.window.createTextEditorDecorationType({
     color: settings.textColor
@@ -36,13 +34,14 @@ function getBlockAnchorDecorationType(name: string) {
             contentText: name,
             fontWeight: 'bold',
             color: settings.blockAnchorColor,
-            margin: '0 -1ch 0 0; position: absolute;'
+            margin: '0 -1ch 0 0'
         }
     });
 }
 
-function createBlockAnchors() {
+function showBlockAnchors() {
     const columns = settings.columns;
+    const regex = new RegExp(settings.regex, 'g');
 
     for (const editor of vscode.window.visibleTextEditors) {
         if (!editor.viewColumn) continue;
@@ -50,29 +49,29 @@ function createBlockAnchors() {
         editor.setDecorations(dimDecorationType, editor.visibleRanges);
         editors.push(editor);
 
+        const map = new Map<vscode.TextEditorDecorationType, vscode.Range[]>();
         for (const visualRange of editor.visibleRanges) {
             for (let i = visualRange.start.line; i <= visualRange.end.line; i++) {
                 const line = editor.document.lineAt(i);
                 const text = line.text.substr(0, columns);
 
-                let match;
-                const indexes = [];
-                while (match = regex.exec(text)) {
-                    indexes.push(match.index);
-                }
-
+                const indexes = [...text.matchAll(regex)].map(x => x.index);
                 for (let j = 0; j < columns; j++) {
                     const range = new vscode.Range(i, j, i, j + 1);
                     if (indexes.includes(j)) {
-                        const name = anchors[Math.floor(blockAnchors.length / anchors.length)];
+                        const name = settings.anchors[Math.floor(blockAnchors.length / settings.anchors.length)];
                         const decorationType = getBlockAnchorDecorationType(name);
-                        editor.setDecorations(decorationType, [range]);
 
+                        map.set(decorationType, (map.get(decorationType) ?? []).concat(range));
                         blockAnchors.push({ name, editor, range, decorationType });
                     }
                 }
             }
         }
+
+        map.forEach((value, key) => {
+            editor.setDecorations(key, value);
+        })
     }
 }
 
@@ -83,16 +82,16 @@ function getWordAnchorDecorationType(name: string) {
             contentText: name,
             fontWeight: 'bold',
             color: settings.wordAnchorColor,
-            margin: '0 -1ch 0 0; position: absolute;',
+            margin: '0 -1ch 0 0',
         }
     });
 }
 
-function createWordAnchors(name: string) {
+function showWordAnchors(name: string) {
     for (const blockAnchor of blockAnchors) {
         blockAnchor.editor.setDecorations(blockAnchor.decorationType, []);
         if (blockAnchor.name === name) {
-            const name = anchors[wordAnchors.length];
+            const name = settings.anchors[wordAnchors.length];
             const editor = blockAnchor.editor;
             const range = blockAnchor.range;
             const decorationType = getWordAnchorDecorationType(name);
@@ -105,12 +104,11 @@ function createWordAnchors(name: string) {
 async function getAnchorSelection(prompt: string) {
     let name;
     const cancellation = new vscode.CancellationTokenSource();
-    await vscode.window.showInputBox(
-        {
+    await vscode.window.showInputBox({
             prompt: prompt,
             validateInput: (text: string): undefined => {
                 if (text.length > 0) {
-                    name = text[0]
+                    name = text[0];
                     cancellation.cancel();
 
                     return;
@@ -190,13 +188,13 @@ function reset() {
 export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand('quickJump.jump', async () => {
         try {
-            createBlockAnchors();
+            showBlockAnchors();
             if (!blockAnchors.length) return;
 
             const blockAnchor = await getBlockAnchorSelection();
             if (!blockAnchor) return;
 
-            createWordAnchors(blockAnchor);
+            showWordAnchors(blockAnchor);
             if (!wordAnchors.length) return;
 
             const wordAnchor = await getWordAnchorSelection();
