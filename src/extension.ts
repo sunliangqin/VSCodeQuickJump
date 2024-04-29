@@ -53,7 +53,7 @@ function showBlockAnchors() {
         for (const visualRange of editor.visibleRanges) {
             for (let i = visualRange.start.line; i <= visualRange.end.line; i++) {
                 const line = editor.document.lineAt(i);
-                const text = line.text.substr(0, columns);
+                const text = line.text.substring(0, columns);
 
                 const indexes = [...text.matchAll(regex)].map(x => x.index);
                 for (let j = 0; j < columns; j++) {

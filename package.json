@@ -14,9 +14,6 @@
         "url": "https://github.com/sunliangqin/VSCodeQuickJump"
     },
     "publisher": "Liangqin",
-    "activationEvents": [
-        "onCommand:quickJump.jump"
-    ],
     "main": "./out/extension.js",
     "icon": "assets/icon.png",
     "contributes": {
@@ -32,12 +29,12 @@
                 "quickJump.anchors": {
                     "type": "string",
                     "default": "hklyuiopnm,qwertzxcvbasdgjf;0123456789/",
-                    "description": "Anchor signs"
+                    "description": "Anchor letters"
                 },
                 "quickJump.regex": {
                     "type": "string",
                     "default": "\\b\\w|\\w\\b|\\w(?=_)|(?<=_)\\w|(?<=[a-z0-9])[A-Z]",
-                    "description": "Custom regex to match for anchors"
+                    "description": "Regex to match"
                 },
                 "quickJump.textColor": {
                     "type": "string",
@@ -76,16 +73,8 @@
         "test": "node ./out/test/runTest.js"
     },
     "devDependencies": {
-        "@types/vscode": "^1.50.0",
-        "@types/glob": "^7.1.3",
-        "@types/mocha": "^8.0.0",
-        "@types/node": "^12.11.7",
-        "eslint": "^7.9.0",
-        "@typescript-eslint/eslint-plugin": "^4.1.1",
-        "@typescript-eslint/parser": "^4.1.1",
-        "glob": "^7.1.6",
-        "mocha": "^8.1.3",
-        "typescript": "^4.0.2",
-        "vscode-test": "^1.4.0"
+        "@types/vscode": "^1.88.0",
+        "@types/node": "^20.12.7",
+        "typescript": "^5.4.5"
     }
 }
